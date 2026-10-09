@@ -1,0 +1,320 @@
+/* ========================================================
+   NOURII STORE - MASTER STYLESHEET (التصميم العام والهوية)
+   ======================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap');
+
+:root {
+  --primary: #c96576;
+  --primary-hover: #b44f60;
+  --primary-light: #fbecee;
+  --secondary: #d89e72;
+  --secondary-light: #fcf4ec;
+  --accent-gold: #cfa85b;
+  --accent-sage: #6e9975;
+  --accent-mint: #eef7f2;
+  --bg-main: #fdfaf6;
+  --bg-card: #ffffff;
+  --text-main: #2b2325;
+  --text-muted: #6e6466;
+  --border-color: #f0e6dd;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-full: 9999px;
+  --shadow-soft: 0 10px 30px -10px rgba(180, 79, 96, 0.08);
+  --shadow-hover: 0 20px 40px -15px rgba(180, 79, 96, 0.16);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.4);
+}
+
+/* Dark Mode Variables */
+[data-theme="dark"] {
+  --primary: #e07a8c;
+  --primary-hover: #ea8d9d;
+  --primary-light: #3a2227;
+  --secondary: #e5b18a;
+  --secondary-light: #3a2b22;
+  --accent-gold: #e2be74;
+  --accent-sage: #8ab892;
+  --accent-mint: #213327;
+  --bg-main: #181516;
+  --bg-card: #221d1f;
+  --text-main: #f7f2f3;
+  --text-muted: #aca1a3;
+  --border-color: #383032;
+  --shadow-soft: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+  --glass-bg: rgba(34, 29, 31, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Base Settings */
+html {
+  scroll-behavior: smooth;
+  font-family: 'Cairo', 'Outfit', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Typography when in English */
+[dir="ltr"] {
+  font-family: 'Outfit', 'Cairo', sans-serif;
+}
+
+/* Glassmorphism Header */
+.glass-header {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Modern Card Hover Effects */
+.nourii-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nourii-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-hover);
+  border-color: rgba(201, 101, 118, 0.3);
+}
+
+/* Category Badge Chip */
+.category-chip {
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.category-chip.active {
+  background: linear-gradient(135deg, var(--primary) 0%, #b44f60 100%);
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px rgba(201, 101, 118, 0.35);
+  border-color: transparent !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e2d1c6;
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, #b44f60 100%);
+  color: #ffffff;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(201, 101, 118, 0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(201, 101, 118, 0.4);
+}
+
+.btn-whatsapp {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: #ffffff;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.3);
+}
+
+.btn-whatsapp:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45);
+}
+
+/* Floating WhatsApp Quick Action Button */
+.floating-whatsapp-btn {
+  position: fixed;
+  bottom: 24px;
+  inset-inline-start: 24px;
+  z-index: 50;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+  font-size: 30px;
+  box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-whatsapp-btn:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.55);
+}
+
+/* Floating Cart Button */
+.floating-cart-btn {
+  position: fixed;
+  bottom: 24px;
+  inset-inline-end: 24px;
+  z-index: 50;
+  min-width: 60px;
+  height: 60px;
+  padding: 0 18px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--primary) 0%, #9e3d4e 100%);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 8px 25px rgba(201, 101, 118, 0.45);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-cart-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 12px 32px rgba(201, 101, 118, 0.6);
+}
+
+/* Pulse animation on cart */
+@keyframes cartPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.pulse-animation {
+  animation: cartPulse 0.4s ease;
+}
+
+/* Modals & Drawers */
+.modal-backdrop {
+  background: rgba(18, 14, 15, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity 0.3s ease;
+}
+
+.drawer-slide {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Toast Notifications */
+#toast-container {
+  position: fixed;
+  top: 24px;
+  inset-inline-end: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.nourii-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15);
+  animation: slideToast 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: 380px;
+}
+
+@keyframes slideToast {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Interactive Star Rating */
+.star-filled {
+  color: #ffb703;
+}
+
+/* Hero Badge Glow */
+.hero-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(201, 101, 118, 0.18) 0%, rgba(216, 158, 114, 0.12) 40%, rgba(0, 0, 0, 0) 70%);
+  filter: blur(50px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Image Aspect and Zoom */
+.product-img-wrapper {
+  overflow: hidden;
+  position: relative;
+  border-radius: 16px;
+  background-color: #f7f1eb;
+}
+
+.product-img-wrapper img {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nourii-card:hover .product-img-wrapper img {
+  transform: scale(1.06);
+}
+
+/* Custom Checkbox and Radio Styles */
+.custom-radio:checked + label {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Print Invoice Styling */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-receipt, #printable-receipt * {
+    visibility: visible;
+  }
+  #printable-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

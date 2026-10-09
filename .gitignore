@@ -1,0 +1,5 @@
+*.zip
+__pycache__/
+.netlify/
+*.bat
+serve_store.py
