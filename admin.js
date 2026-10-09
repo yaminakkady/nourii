@@ -170,7 +170,15 @@ function checkLoginWithGoogleDrive(username, password) {
       password: password
     })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error('رابط Google Apps Script غير صالح أو تم تغييره (خطأ 404). يرجى نسخ رابط النشر الحالي من Apps Script.');
+      }
+      throw new Error(`تعذر الاتصال بخادم Google (${res.status})`);
+    }
+    return res.json();
+  })
   .then(res => {
     if (res.status === 'success' && res.user) {
       // مزامنة المستخدم محلياً
@@ -193,7 +201,10 @@ function checkLoginWithGoogleDrive(username, password) {
   })
   .catch(err => {
     console.error(err);
-    showLoginError('تعذر الاتصال بـ Google Drive للتحقق من الحساب.');
+    const msg = (err && err.message && err.message.includes('404'))
+      ? err.message
+      : 'تعذر الاتصال بـ Google Drive للتحقق من الحساب. تأكد من أن رابط النشر سليم ومضبوط على Anyone.';
+    showLoginError(msg);
   });
 }
 
@@ -829,12 +840,27 @@ function deleteUser(username) {
 
 function syncUserToGoogleDrive(user) {
   const url = ADMIN_STATE.settings.googleScriptUrl;
-  if (!url) return;
+  if (!url) {
+    showAdminToast('تنبيه: تم حفظ المستخدم محلياً على هذا الجهاز فقط. Google Drive غير متصل بعد.', 'warning');
+    return;
+  }
 
   fetch(url, {
     method: 'POST',
     body: JSON.stringify({ action: 'saveUser', user: user })
-  }).catch(e => console.warn('Drive user sync err:', e));
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      showAdminToast(`تمت مزامنة المستخدم "${user.fullName || user.username}" بنجاح في Google Drive ليتمكن من الدخول من أي جهاز! ☁️✨`, 'success');
+    } else {
+      showAdminToast(`تنبيه: فشل الحفظ في Google Drive (${data.message || 'خطأ'}).`, 'warning');
+    }
+  })
+  .catch(e => {
+    console.warn('Drive user sync err:', e);
+    showAdminToast('تنبيه: تعذر الاتصال بـ Google Drive. تأكد من صحة الرابط ليعمل الحساب من الأجهزة الأخرى.', 'warning');
+  });
 }
 
 function deleteUserFromGoogleDrive(username) {
