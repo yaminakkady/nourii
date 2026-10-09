@@ -55,6 +55,20 @@ function loadStoredData() {
 
     const savedSettings = localStorage.getItem('nourii_settings');
     if (savedSettings) APP_STATE.settings = { ...APP_STATE.settings, ...JSON.parse(savedSettings) };
+
+    // Live updated products from Admin / Google Drive
+    const liveProds = localStorage.getItem('nourii_live_products') || localStorage.getItem('nourii_admin_products');
+    if (liveProds) {
+      try {
+        const parsed = JSON.parse(liveProds);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          PRODUCTS.length = 0;
+          parsed.forEach(p => PRODUCTS.push(p));
+        }
+      } catch (err) {
+        console.warn('Error applying live products:', err);
+      }
+    }
   } catch (e) {
     console.error('Error loading stored data:', e);
   }

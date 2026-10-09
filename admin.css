@@ -1,0 +1,150 @@
+/* ========================================================
+   NOURII STORE - ADMIN PORTAL STYLES (تصميم لوحة التحكم)
+   ======================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root {
+  --admin-primary: #b44f60;
+  --admin-primary-hover: #9c3f4f;
+  --admin-primary-light: #fbecee;
+  --admin-sidebar-bg: #1f1b1d;
+  --admin-sidebar-text: #e6dfdf;
+  --admin-sidebar-active: #b44f60;
+  --admin-bg: #f8f6f4;
+  --admin-card: #ffffff;
+  --admin-text: #2b2325;
+  --admin-muted: #736b6d;
+  --admin-border: #ede4dc;
+}
+
+[data-theme="dark"] {
+  --admin-bg: #141213;
+  --admin-card: #1f1a1c;
+  --admin-text: #f7f2f3;
+  --admin-muted: #a69b9d;
+  --admin-border: #332b2e;
+  --admin-sidebar-bg: #110e0f;
+}
+
+html {
+  font-family: 'Cairo', 'Outfit', sans-serif;
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+}
+
+/* Glass & Card settings */
+.admin-card {
+  background-color: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar Navigation */
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: var(--admin-sidebar-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.admin-nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+}
+
+.admin-nav-item.active {
+  background: linear-gradient(135deg, var(--admin-primary) 0%, #8c3241 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(180, 79, 96, 0.35);
+}
+
+/* Table Design */
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-table th {
+  background-color: rgba(0, 0, 0, 0.02);
+  padding: 14px 18px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-table td {
+  padding: 16px 18px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--admin-border);
+  vertical-align: middle;
+}
+
+.admin-table tr:hover td {
+  background-color: rgba(180, 79, 96, 0.02);
+}
+
+/* Badges */
+.badge-role-admin {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.badge-role-editor {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-sync-ok {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.badge-sync-pending {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+
+/* Modals */
+.admin-modal-backdrop {
+  background: rgba(18, 14, 15, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Toast */
+.admin-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: var(--admin-card);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: 400px;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
+}

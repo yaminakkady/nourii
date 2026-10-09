@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم إدارة Nourii | Admin Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          colors: {
+            adminPrimary: '#b44f60',
+            adminPrimaryDark: '#913b49'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom Admin Styles -->
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="bg-[#f8f6f4] dark:bg-[#141213] text-[#2b2325] dark:text-[#f7f2f3]">
+
+  <!-- ================= 1. LOGIN SCREEN (شاشة تسجيل الدخول) ================= -->
+  <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-tr from-stone-900 via-stone-800 to-stone-950">
+    <div class="admin-card max-w-md w-full p-8 bg-white dark:bg-[#1f1a1c] shadow-2xl relative border border-stone-200 dark:border-stone-800">
+      
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-pink-600 to-amber-500 flex items-center justify-center text-white text-3xl font-black shadow-lg mb-4">
+          N
+        </div>
+        <h1 class="text-2xl font-black tracking-tight">لوحة تحكم Nourii</h1>
+        <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">سجل الدخول لإدارة المنتجات، المستخدمين، والمزامنة</p>
+      </div>
+
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold mb-1.5 text-stone-700 dark:text-stone-300">اسم المستخدم (Username)</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute top-1/2 -translate-y-1/2 inset-inline-start-3.5 text-stone-400 text-xs"></i>
+            <input type="text" id="login-username" required placeholder="admin" 
+              class="w-full ps-10 pe-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-sm focus:ring-2 focus:ring-pink-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1.5 text-stone-700 dark:text-stone-300">كلمة المرور (Password)</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute top-1/2 -translate-y-1/2 inset-inline-start-3.5 text-stone-400 text-xs"></i>
+            <input type="password" id="login-password" required placeholder="••••••••" 
+              class="w-full ps-10 pe-10 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 text-sm focus:ring-2 focus:ring-pink-500 focus:outline-none">
+            <button type="button" onclick="togglePasswordVisibility('login-password')" class="absolute top-1/2 -translate-y-1/2 inset-inline-end-3.5 text-stone-400 hover:text-stone-600">
+              <i class="fa-solid fa-eye text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="login-error-msg" class="hidden p-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-xs text-center font-bold">
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-700 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <span>تسجيل الدخول</span>
+        </button>
+      </form>
+
+      <div class="mt-6 pt-5 border-t border-stone-100 dark:border-stone-800/80 text-center">
+        <p class="text-[11px] text-stone-400">
+          حساب المشرف التجريبي الافتراضي: <br>
+          المستخدم: <strong class="text-stone-600 dark:text-stone-200">admin</strong> | كلمة المرور: <strong class="text-stone-600 dark:text-stone-200">nourii2026</strong>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 2. MAIN DASHBOARD LAYOUT (لوحة التحكم الرئيسية) ================= -->
+  <div id="dashboard-layout" class="hidden min-h-screen flex flex-col md:flex-row">
+    
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-64 bg-[#1f1b1d] text-stone-200 flex flex-col justify-between p-5 flex-shrink-0">
+      <div>
+        <!-- Logo -->
+        <div class="flex items-center gap-3 mb-8 pb-5 border-b border-stone-800">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-600 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-md">
+            N
+          </div>
+          <div>
+            <h2 class="font-black text-lg tracking-tight font-serif text-white">Nourii Admin</h2>
+            <span class="text-[10px] text-stone-400 font-bold block">إدارة المتجر والمحتوى</span>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="space-y-1.5">
+          <div onclick="switchTab('overview')" id="tab-btn-overview" class="admin-nav-item active">
+            <i class="fa-solid fa-chart-pie text-sm w-5"></i>
+            <span>نظرة عامة</span>
+          </div>
+
+          <div onclick="switchTab('products')" id="tab-btn-products" class="admin-nav-item">
+            <i class="fa-solid fa-box-open text-sm w-5"></i>
+            <span>إدارة المنتجات</span>
+          </div>
+
+          <div onclick="switchTab('users')" id="tab-btn-users" class="admin-nav-item">
+            <i class="fa-solid fa-users-gear text-sm w-5"></i>
+            <span>إدارة المستخدمين</span>
+          </div>
+
+          <div onclick="switchTab('sync')" id="tab-btn-sync" class="admin-nav-item">
+            <i class="fa-solid fa-cloud-arrow-up text-sm w-5"></i>
+            <span>Google Drive & GitHub</span>
+          </div>
+        </nav>
+      </div>
+
+      <!-- Bottom Profile & Logout -->
+      <div class="pt-5 border-t border-stone-800">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs">
+              <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <div>
+              <span id="current-user-name" class="font-bold text-xs text-white block">admin</span>
+              <span id="current-user-role" class="text-[10px] text-pink-400 font-bold uppercase">Super Admin</span>
+            </div>
+          </div>
+          <button onclick="handleLogout()" class="text-stone-400 hover:text-red-400 text-xs p-1" title="تسجيل الخروج">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <a href="index.html" target="_blank" class="w-full py-2 px-3 rounded-lg bg-stone-800 hover:bg-stone-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors">
+          <i class="fa-solid fa-store"></i>
+          <span>فتح المتجر المباشر</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      
+      <!-- Top Header Bar -->
+      <header class="h-20 bg-white dark:bg-[#1f1a1c] border-b border-stone-200 dark:border-stone-800 px-6 sm:px-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 id="page-title" class="text-xl sm:text-2xl font-black">نظرة عامة</h1>
+          <p id="page-subtitle" class="text-xs text-stone-500 dark:text-stone-400 hidden sm:block">ملخص إحصائيات المتجر والمنتجات الحالية</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Live Sync Status Pill -->
+          <div id="sync-status-indicator" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="sync-status-text">جاهز للمزامنة</span>
+          </div>
+
+          <!-- Direct GitHub Push Button -->
+          <button onclick="publishToGitHub()" class="h-9 px-4 rounded-xl bg-gradient-to-r from-stone-900 to-black text-white hover:from-pink-700 hover:to-rose-800 text-xs font-bold flex items-center gap-2 shadow-sm transition-all">
+            <i class="fa-brands fa-github text-sm"></i>
+            <span>نشر على GitHub</span>
+          </button>
+
+          <!-- Theme Toggle -->
+          <button onclick="toggleAdminTheme()" class="w-9 h-9 rounded-xl border border-stone-200 dark:border-stone-700 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800">
+            <i id="admin-theme-icon" class="fa-solid fa-moon text-xs"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- TAB CONTENT CONTAINER -->
+      <div class="p-6 sm:p-8 flex-1">
+        
+        <!-- ================= TAB 1: OVERVIEW ================= -->
+        <div id="tab-overview" class="space-y-8">
+          <!-- 4 Stat Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            
+            <div class="admin-card p-5 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-stone-500 block mb-1">إجمالي المنتجات</span>
+                <span id="stat-total-products" class="text-3xl font-black text-pink-600">30</span>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-pink-900/30 text-pink-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-boxes-stacked"></i>
+              </div>
+            </div>
+
+            <div class="admin-card p-5 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-stone-500 block mb-1">الأقسام المتاحة</span>
+                <span class="text-3xl font-black text-amber-600">10</span>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-tags"></i>
+              </div>
+            </div>
+
+            <div class="admin-card p-5 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-stone-500 block mb-1">المستخدمين المصرحين</span>
+                <span id="stat-total-users" class="text-3xl font-black text-blue-600">1</span>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-user-group"></i>
+              </div>
+            </div>
+
+            <div class="admin-card p-5 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-stone-500 block mb-1">مستودع GitHub</span>
+                <span class="text-sm font-black text-emerald-600">yaminakkady/nourii</span>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center text-xl">
+                <i class="fa-brands fa-github"></i>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Quick Action Shortcuts -->
+          <div class="admin-card p-6">
+            <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-amber-500"></i>
+              <span>إجراءات سريعة</span>
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <button onclick="openAddProductModal()" class="p-4 rounded-xl border border-stone-200 dark:border-stone-800 hover:border-pink-300 dark:hover:border-pink-800 hover:bg-pink-50/50 dark:hover:bg-stone-800 flex items-center gap-3 text-start transition-all">
+                <div class="w-10 h-10 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center font-bold">
+                  <i class="fa-solid fa-plus"></i>
+                </div>
+                <div>
+                  <span class="font-bold text-xs block">إضافة منتج جديد</span>
+                  <span class="text-[11px] text-stone-500">أضف منتج وسعر وصور جديدة</span>
+                </div>
+              </button>
+
+              <button onclick="openAddUserModal()" class="p-4 rounded-xl border border-stone-200 dark:border-stone-800 hover:border-blue-300 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-stone-800 flex items-center gap-3 text-start transition-all">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                  <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <div>
+                  <span class="font-bold text-xs block">إضافة مستخدم جديد</span>
+                  <span class="text-[11px] text-stone-500">إضافة مشرف أو محرر للوحة</span>
+                </div>
+              </button>
+
+              <button onclick="switchTab('sync')" class="p-4 rounded-xl border border-stone-200 dark:border-stone-800 hover:border-emerald-300 dark:hover:border-emerald-800 hover:bg-emerald-50/50 dark:hover:bg-stone-800 flex items-center gap-3 text-start transition-all">
+                <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                  <i class="fa-solid fa-rotate"></i>
+                </div>
+                <div>
+                  <span class="font-bold text-xs block">إعدادات المزامنة</span>
+                  <span class="text-[11px] text-stone-500">Google Drive & GitHub Sync</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= TAB 2: PRODUCTS CMS ================= -->
+        <div id="tab-products" class="hidden space-y-6">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <!-- Filter & Search -->
+            <div class="flex flex-1 items-center gap-3">
+              <div class="relative flex-1 max-w-sm">
+                <i class="fa-solid fa-magnifying-glass absolute top-1/2 -translate-y-1/2 inset-inline-start-3.5 text-stone-400 text-xs"></i>
+                <input type="text" id="admin-search-products" oninput="handleProductSearch(this.value)" placeholder="ابحث بالاسم أو القسم..." 
+                  class="w-full ps-10 pe-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-[#1f1a1c] text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+              </div>
+
+              <select id="admin-category-filter" onchange="handleCategoryFilter(this.value)" 
+                class="px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-[#1f1a1c] text-xs font-bold focus:outline-none">
+                <option value="all">جميع الأقسام (10)</option>
+                <!-- Categories populated by JS -->
+              </select>
+            </div>
+
+            <!-- Add Product Button -->
+            <button onclick="openAddProductModal()" class="py-2.5 px-5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all">
+              <i class="fa-solid fa-plus"></i>
+              <span>إضافة منتج جديد</span>
+            </button>
+          </div>
+
+          <!-- Products Table -->
+          <div class="admin-card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>الصورة</th>
+                    <th>اسم المنتج</th>
+                    <th>القسم</th>
+                    <th>السعر الحالي</th>
+                    <th>الوسم / الحالة</th>
+                    <th>التخصيص بالاسم</th>
+                    <th class="text-center">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-products-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= TAB 3: USERS MANAGEMENT ================= -->
+        <div id="tab-users" class="hidden space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-base">المستخدمون المصرح لهم</h3>
+              <p class="text-xs text-stone-500">إدارة حسابات المشرفين والمحررين في لوحة التحكم</p>
+            </div>
+            <button onclick="openAddUserModal()" class="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>إضافة مستخدم جديد</span>
+            </button>
+          </div>
+
+          <!-- Users Table -->
+          <div class="admin-card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>اسم المستخدم</th>
+                    <th>الاسم الكامل</th>
+                    <th>الدور والصلاحية</th>
+                    <th>تاريخ الإنشاء</th>
+                    <th>الحالة</th>
+                    <th class="text-center">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= TAB 4: GOOGLE DRIVE & GITHUB SYNC ================= -->
+        <div id="tab-sync" class="hidden space-y-8">
+          
+          <!-- 1. Google Drive Integration -->
+          <div class="admin-card p-6 sm:p-8">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl font-black">
+                  <i class="fa-brands fa-google-drive"></i>
+                </div>
+                <div>
+                  <h3 class="font-black text-lg">ربط قاعدة بيانات Google Drive</h3>
+                  <p class="text-xs text-stone-500">Google Sheets & Google Apps Script Backend</p>
+                </div>
+              </div>
+
+              <a href="docs/google_drive_setup_guide.md" target="_blank" class="text-xs text-pink-600 font-bold hover:underline flex items-center gap-1">
+                <i class="fa-solid fa-circle-question"></i>
+                <span>دليل التثبيت في دقيقتين</span>
+              </a>
+            </div>
+
+            <p class="text-xs text-stone-600 dark:text-stone-300 leading-relaxed mb-6">
+              يتم ربط المتجر بجدول بيانات Google Sheets في حسابك الشخصي ليعمل كقاعدة بيانات حية، مع إمكانية رفع وتخزين الصور مباشرة في مجلد Google Drive.
+            </p>
+
+            <div class="space-y-4 max-w-2xl mb-6">
+              <div>
+                <label class="block text-xs font-bold mb-1.5">رابط تطبيق الويب (Google Apps Script Web App URL)</label>
+                <input type="url" id="google-script-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" 
+                  class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+              </div>
+
+              <div class="flex flex-wrap items-center gap-3">
+                <button onclick="saveAndTestGoogleDrive()" class="py-2.5 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-2">
+                  <i class="fa-solid fa-link"></i>
+                  <span>حفظ واختبار الاتصال</span>
+                </button>
+                <button onclick="syncFromGoogleDrive()" class="py-2.5 px-6 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-bold flex items-center gap-2">
+                  <i class="fa-solid fa-download"></i>
+                  <span>سحب أحدث البيانات من Google Sheet</span>
+                </button>
+                <button onclick="pushToGoogleDrive()" class="py-2.5 px-6 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-bold flex items-center gap-2">
+                  <i class="fa-solid fa-upload"></i>
+                  <span>تصدير المنتجات الحالية إلى Google Sheet</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. GitHub Sync -->
+          <div class="admin-card p-6 sm:p-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 rounded-2xl bg-stone-900 text-white flex items-center justify-center text-2xl font-black">
+                <i class="fa-brands fa-github"></i>
+              </div>
+              <div>
+                <h3 class="font-black text-lg">مزامنة مستودع GitHub</h3>
+                <p class="text-xs text-stone-500">تحديث كود المتجر وموقع GitHub Pages مباشرة</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-stone-600 dark:text-stone-300 leading-relaxed mb-6">
+              المستودع المتصل حالياً: <strong class="text-stone-800 dark:text-stone-100 font-mono">yaminakkady/nourii</strong> على فرع <strong class="font-mono">main</strong>.
+              عند الضغط على نشر، يتم تحديث ملف <code class="font-mono text-pink-600">products.js</code> لتنعكس جميع التعديلات والإضافات على الموقع المباشر.
+            </p>
+
+            <div class="space-y-4 max-w-2xl mb-6">
+              <div>
+                <label class="block text-xs font-bold mb-1.5">رمز الوصول الشخصي (GitHub Personal Access Token) - اختياري للنشر من المتصفح</label>
+                <input type="password" id="github-pat-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" 
+                  class="w-full px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs font-mono focus:ring-2 focus:ring-pink-500 focus:outline-none">
+                <p class="text-[10px] text-stone-400 mt-1">إذا تركته فارغاً، يمكنك استخدام سكربت المزامنة المحلي <code class="font-mono">sync_store.bat</code> في مجلدك.</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-3">
+                <button onclick="publishToGitHub()" class="py-2.5 px-6 rounded-xl bg-stone-900 hover:bg-black text-white font-bold text-xs flex items-center gap-2">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>نشر التعديلات إلى GitHub الآن</span>
+                </button>
+                <button onclick="downloadUpdatedProductsJs()" class="py-2.5 px-6 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-bold flex items-center gap-2">
+                  <i class="fa-solid fa-file-code"></i>
+                  <span>تحميل ملف products.js المحدّث</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT PRODUCT ================= -->
+  <div id="product-form-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 admin-modal-backdrop hidden">
+    <div class="admin-card max-w-2xl w-full p-6 sm:p-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-4 border-b border-stone-200 dark:border-stone-800 mb-6">
+        <h3 id="product-modal-title" class="font-black text-lg">إضافة منتج جديد</h3>
+        <button onclick="closeProductFormModal()" class="w-8 h-8 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="product-form" onsubmit="handleProductFormSubmit(event)" class="space-y-4">
+        <input type="hidden" id="prod-form-id">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold mb-1">اسم المنتج بالعربية *</label>
+            <input type="text" id="prod-name-ar" required placeholder="مثال: بوكس تلوين كونكريت مخصص" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">اسم المنتج بالإنجليزية</label>
+            <input type="text" id="prod-name-en" placeholder="e.g., Custom Concrete Painting Kit" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold mb-1">القسم *</label>
+            <select id="prod-category" required class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+              <!-- Injected by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">السعر الحالي (ج.م) *</label>
+            <input type="number" id="prod-price" required min="1" step="1" placeholder="150" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">السعر الأصلي قبل الخصم</label>
+            <input type="number" id="prod-original-price" min="0" step="1" placeholder="180" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Image URL or Upload -->
+        <div>
+          <label class="block text-xs font-bold mb-1">رابط أو مسار الصورة *</label>
+          <div class="flex gap-2">
+            <input type="text" id="prod-image-url" required placeholder="assets/images/concrete-coloring.jpg أو رابط ويب" 
+              class="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+            <label class="py-2.5 px-4 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 text-xs font-bold cursor-pointer flex items-center gap-1.5" title="رفع ملف إلى Google Drive">
+              <i class="fa-solid fa-cloud-arrow-up text-pink-600"></i>
+              <span class="hidden sm:inline">رفع لـ Drive</span>
+              <input type="file" id="prod-image-file" accept="image/*" class="hidden" onchange="handleImageFileUpload(event)">
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold mb-1">وسم المنتج بالعربية (Badge)</label>
+            <input type="text" id="prod-badge-ar" placeholder="مثال: الأكثر طلباً ⭐ أو خصم 20%" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">وسم المنتج بالإنجليزية</label>
+            <input type="text" id="prod-badge-en" placeholder="e.g., Best Seller ⭐" 
+              class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Customization Toggle -->
+        <div class="p-3.5 rounded-xl bg-pink-50/60 dark:bg-stone-800/50 border border-pink-100 dark:border-stone-700">
+          <label class="flex items-center gap-2 cursor-pointer mb-2">
+            <input type="checkbox" id="prod-customizable" class="rounded text-pink-600 w-4 h-4">
+            <span class="text-xs font-bold text-stone-800 dark:text-stone-200">المنتج يقبل التخصيص بكتابة الاسم أو عبارة من العميل</span>
+          </label>
+          <input type="text" id="prod-custom-label-ar" placeholder="عنوان حقل التخصيص (مثال: الاسم المراد نقشه بالذهب)" 
+            class="w-full px-3 py-2 rounded-lg border border-pink-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-xs">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1">الوصف بالعربية</label>
+          <textarea id="prod-desc-ar" rows="2" placeholder="وصف تفاصيل الخامة والمقاس..." 
+            class="w-full px-3.5 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-stone-100 dark:border-stone-800">
+          <button type="button" onclick="closeProductFormModal()" class="px-5 py-2.5 rounded-xl border border-stone-200 text-xs font-bold">إلغاء</button>
+          <button type="submit" class="py-2.5 px-6 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs">حفظ المنتج</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT USER ================= -->
+  <div id="user-form-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 admin-modal-backdrop hidden">
+    <div class="admin-card max-w-md w-full p-6 sm:p-8">
+      <div class="flex items-center justify-between pb-4 border-b border-stone-200 dark:border-stone-800 mb-6">
+        <h3 id="user-modal-title" class="font-black text-lg">إضافة مستخدم جديد</h3>
+        <button onclick="closeUserFormModal()" class="w-8 h-8 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="user-form" onsubmit="handleUserFormSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold mb-1">اسم المستخدم (Username) *</label>
+          <input type="text" id="user-username" required placeholder="مثال: norhan" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1">الاسم بالكامل (Full Name) *</label>
+          <input type="text" id="user-fullname" required placeholder="مثال: نورهان أحمد" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1">كلمة المرور (Password) *</label>
+          <input type="password" id="user-password" required placeholder="••••••••" 
+            class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1">الدور والصلاحية *</label>
+          <select id="user-role" required class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="editor">محرر (Editor) - إدارة وتعديل المنتجات</option>
+            <option value="admin">مشرف رئيسي (Admin) - كامل الصلاحيات</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-stone-100 dark:border-stone-800">
+          <button type="button" onclick="closeUserFormModal()" class="px-5 py-2.5 rounded-xl border border-stone-200 text-xs font-bold">إلغاء</button>
+          <button type="submit" class="py-2.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs">حفظ المستخدم</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="admin-toast-container" class="fixed top-6 inset-inline-end-6 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
+  <!-- Scripts -->
+  <script src="products.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
