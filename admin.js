@@ -113,35 +113,43 @@ function handleLoginSubmit(e) {
   e.preventDefault();
   const usernameInput = document.getElementById('login-username');
   const passwordInput = document.getElementById('login-password');
-  const errorMsg = document.getElementById('login-error-msg');
 
   const username = usernameInput ? usernameInput.value.trim().toLowerCase() : '';
   const password = passwordInput ? passwordInput.value.trim() : '';
 
-  // 1. Check in local users state
+  // 🟢 عند ربط Google Drive: التحقق يتم من Google Drive فقط (المصدر الوحيد)
+  // حتى لا يتمكن أي مستخدم محذوف من الدخول بسبب نسخة قديمة مخزنة في المتصفح
+  if (ADMIN_STATE.settings.googleScriptUrl) {
+    checkLoginWithGoogleDrive(username, password);
+    return;
+  }
+
+  // وضع عدم الاتصال فقط (بدون Google Drive)
   const user = ADMIN_STATE.users.find(u => u.username.toLowerCase() === username && u.password === password);
+  if (!user) {
+    showLoginError('اسم المستخدم أو كلمة المرور غير صحيحة.');
+    return;
+  }
+  if (user.isActive === false) {
+    showLoginError('هذا الحساب معطل حالياً من قِبل الإدارة.');
+    return;
+  }
+  if (user.mustChangePassword) {
+    showFirstTimePasswordScreen(user);
+    return;
+  }
+  completeUserLogin(user);
+}
 
-  if (user) {
-    if (user.isActive === false) {
-      showLoginError('هذا الحساب معطل حالياً من قِبل الإدارة.');
-      return;
-    }
-
-    // 🟢 هل هذا تسجيل دخوله الأول ومطلوب منه إنشاء كلمة مرور خاصة؟
-    if (user.mustChangePassword) {
-      showFirstTimePasswordScreen(user);
-      return;
-    }
-
-    // تسجيل الدخول العادي
-    completeUserLogin(user);
-  } else {
-    // 2. فحص عبر Google Drive API إذا كان مربوطاً
-    if (ADMIN_STATE.settings.googleScriptUrl) {
-      checkLoginWithGoogleDrive(username, password);
-    } else {
-      showLoginError('اسم المستخدم أو كلمة المرور غير صحيحة.');
-    }
+// التحقق من أن المستخدم الحالي ما زال موجوداً ومفعلاً في Google Drive، وإلا يتم تسجيل خروجه فوراً
+function validateCurrentSessionWithDrive(remoteUsers) {
+  if (!ADMIN_STATE.currentUser) return;
+  const me = remoteUsers.find(u => String(u.username).toLowerCase() === String(ADMIN_STATE.currentUser.username).toLowerCase());
+  if (!me || me.isActive === false) {
+    ADMIN_STATE.currentUser = null;
+    localStorage.removeItem('nourii_admin_session');
+    showAdminToast('تم إنهاء الجلسة: هذا الحساب لم يعد موجوداً أو تم تعطيله.', 'error');
+    checkAuthSession();
   }
 }
 
@@ -930,6 +938,7 @@ function fetchLiveUsersFromGoogleDrive(notify = false) {
 
         ADMIN_STATE.users = freshUsers;
         localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
+        validateCurrentSessionWithDrive(res.data);
         renderUsersTable();
         updateStatCards();
         if (notify) showAdminToast(`تمت مزامنة المستخدمين بنجاح والتطابق التام مع Google Drive! 👥`, 'success');
