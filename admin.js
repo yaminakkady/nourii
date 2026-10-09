@@ -872,7 +872,20 @@ function deleteUserFromGoogleDrive(username) {
   fetch(url, {
     method: 'POST',
     body: JSON.stringify({ action: 'deleteUser', username: username })
-  }).catch(e => console.warn('Drive user delete err:', e));
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      showAdminToast(`تم حذف المستخدم "${username}" نهائياً من Google Drive! 🗑️`, 'info');
+      fetchLiveUsersFromGoogleDrive(false);
+    } else {
+      showAdminToast(`تنبيه: فشل الحذف من Google Drive (${data.message || 'خطأ'}).`, 'warning');
+    }
+  })
+  .catch(e => {
+    console.warn('Drive user delete err:', e);
+    showAdminToast('تنبيه: تعذر الاتصال بـ Google Drive لحذف المستخدم.', 'warning');
+  });
 }
 
 function fetchLiveUsersFromGoogleDrive(notify = false) {
@@ -883,7 +896,7 @@ function fetchLiveUsersFromGoogleDrive(notify = false) {
     return;
   }
 
-  if (notify) showAdminToast('جاري سحب أحدث قائمة مستخدمين من Google Drive...', 'info');
+  if (notify) showAdminToast('جاري سحب وتحديث قائمة المستخدمين من Google Drive...', 'info');
 
   fetch(`${url}?action=getUsers`)
     .then(res => {
@@ -891,19 +904,35 @@ function fetchLiveUsersFromGoogleDrive(notify = false) {
       return res.json();
     })
     .then(res => {
-      if (res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
-        res.data.forEach(remoteUser => {
-          const idx = ADMIN_STATE.users.findIndex(u => u.username.toLowerCase() === remoteUser.username.toLowerCase());
-          if (idx > -1) {
-            ADMIN_STATE.users[idx] = { ...ADMIN_STATE.users[idx], ...remoteUser };
-          } else {
-            ADMIN_STATE.users.push(remoteUser);
-          }
+      if (res.status === 'success' && Array.isArray(res.data)) {
+        // قاعدة بيانات Google Drive هي المصدر الرئيسي الموثوق (Source of Truth)
+        // أي مستخدم يُحذف من Google Drive يُحذف فوراً من المتجر
+        const freshUsers = res.data.map(remoteUser => {
+          const localMatch = ADMIN_STATE.users.find(u => u.username.toLowerCase() === remoteUser.username.toLowerCase());
+          return {
+            ...remoteUser,
+            password: (localMatch && localMatch.password) ? localMatch.password : remoteUser.password
+          };
         });
+
+        // التأكد من بقاء حساب المشرف admin متاحاً دائماً
+        if (!freshUsers.some(u => u.username.toLowerCase() === 'admin')) {
+          freshUsers.unshift({
+            username: 'admin',
+            password: 'nourii2026',
+            fullName: 'مدير النظام (Super Admin)',
+            role: 'admin',
+            createdAt: new Date().toLocaleDateString('ar-EG'),
+            isActive: true,
+            mustChangePassword: false
+          });
+        }
+
+        ADMIN_STATE.users = freshUsers;
         localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
         renderUsersTable();
         updateStatCards();
-        if (notify) showAdminToast(`تم جلب وتحديث ${res.data.length} مستخدم بنجاح من Google Drive! 👥`, 'success');
+        if (notify) showAdminToast(`تمت مزامنة المستخدمين بنجاح والتطابق التام مع Google Drive! 👥`, 'success');
       } else if (notify) {
         showAdminToast('تم الاتصال بـ Drive ولكن لا يوجد مستخدمون إضافيون.', 'info');
       }
