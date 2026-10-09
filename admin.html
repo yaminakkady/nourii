@@ -387,10 +387,20 @@
               <h3 class="font-bold text-base">المستخدمون المصرح لهم</h3>
               <p class="text-xs text-stone-500">إدارة حسابات المشرفين والمحررين في لوحة التحكم</p>
             </div>
-            <button onclick="openAddUserModal()" class="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all">
-              <i class="fa-solid fa-user-plus"></i>
-              <span>إضافة مستخدم جديد</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <button onclick="fetchLiveUsersFromGoogleDrive(true)" class="py-2.5 px-4 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold text-xs flex items-center gap-2 shadow-sm transition-all" title="تحديث وقراءة المستخدمين من Google Drive">
+                <i class="fa-solid fa-arrows-rotate text-blue-500"></i>
+                <span>تحديث المستخدمين من Drive</span>
+              </button>
+              <button onclick="pushAllUsersToGoogleDrive()" class="py-2.5 px-4 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold text-xs flex items-center gap-2 shadow-sm transition-all" title="رفع كافة المستخدمين المحليين إلى Google Drive">
+                <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i>
+                <span>مزامنة المستخدمين مع Drive</span>
+              </button>
+              <button onclick="openAddUserModal()" class="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all">
+                <i class="fa-solid fa-user-plus"></i>
+                <span>إضافة مستخدم جديد</span>
+              </button>
+            </div>
           </div>
 
           <!-- Users Table -->

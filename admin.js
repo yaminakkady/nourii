@@ -81,6 +81,7 @@ function loadAdminStoredData() {
     // If Google Drive URL is active, fetch live data from Google Drive as PRIMARY source
     if (ADMIN_STATE.settings.googleScriptUrl) {
       syncSilentlyFromGoogleDrive();
+      fetchLiveUsersFromGoogleDrive();
     }
 
   } catch (e) {
@@ -467,6 +468,7 @@ function switchTab(tabId) {
     titleEl.innerText = 'إدارة المستخدمين والمشرفين';
     subEl.innerText = 'التحكم في صلاحيات الوصول وإنشاء كلمات المرور';
     renderUsersTable();
+    fetchLiveUsersFromGoogleDrive(false);
   } else if (tabId === 'sync') {
     titleEl.innerText = 'إعدادات Google Drive & GitHub';
     subEl.innerText = 'ربط قاعدة بيانات Google Sheets كمصدر رئيسي ومزامنة المستودع';
@@ -871,6 +873,85 @@ function deleteUserFromGoogleDrive(username) {
     method: 'POST',
     body: JSON.stringify({ action: 'deleteUser', username: username })
   }).catch(e => console.warn('Drive user delete err:', e));
+}
+
+function fetchLiveUsersFromGoogleDrive(notify = false) {
+  const url = (typeof NOURII_CONFIG !== 'undefined' && NOURII_CONFIG.googleScriptUrl) 
+    || localStorage.getItem('nourii_google_script_url');
+  if (!url) {
+    if (notify) showAdminToast('يرجى ربط رابط Google Apps Script أولاً.', 'error');
+    return;
+  }
+
+  if (notify) showAdminToast('جاري سحب أحدث قائمة مستخدمين من Google Drive...', 'info');
+
+  fetch(`${url}?action=getUsers`)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      return res.json();
+    })
+    .then(res => {
+      if (res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
+        res.data.forEach(remoteUser => {
+          const idx = ADMIN_STATE.users.findIndex(u => u.username.toLowerCase() === remoteUser.username.toLowerCase());
+          if (idx > -1) {
+            ADMIN_STATE.users[idx] = { ...ADMIN_STATE.users[idx], ...remoteUser };
+          } else {
+            ADMIN_STATE.users.push(remoteUser);
+          }
+        });
+        localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
+        renderUsersTable();
+        updateStatCards();
+        if (notify) showAdminToast(`تم جلب وتحديث ${res.data.length} مستخدم بنجاح من Google Drive! 👥`, 'success');
+      } else if (notify) {
+        showAdminToast('تم الاتصال بـ Drive ولكن لا يوجد مستخدمون إضافيون.', 'info');
+      }
+    })
+    .catch(err => {
+      console.warn('Fetch live users error:', err);
+      if (notify) showAdminToast('تعذر الاتصال بـ Google Drive لجلب المستخدمين. تأكد من صحة الرابط.', 'error');
+    });
+}
+
+function pushAllUsersToGoogleDrive() {
+  const url = ADMIN_STATE.settings.googleScriptUrl;
+  if (!url) {
+    showAdminToast('يرجى ربط رابط Google Apps Script أولاً', 'error');
+    return;
+  }
+
+  showAdminToast('جاري تصدير ومزامنة جميع المستخدمين إلى Google Drive...', 'info');
+
+  const usersToPush = ADMIN_STATE.users.filter(u => u.username.toLowerCase() !== 'admin');
+  if (usersToPush.length === 0) {
+    showAdminToast('لا يوجد مستخدمون إضافيون للتصدير (المشرف admin مدمج تلقائياً).', 'info');
+    return;
+  }
+
+  let count = 0;
+  const pushNext = (idx) => {
+    if (idx >= usersToPush.length) {
+      if (count > 0) {
+        showAdminToast(`تم تصدير وحفظ ${count} مستخدم بنجاح في Google Drive ليتمكنوا من الدخول من أي جهاز! ☁️🎉`, 'success');
+        fetchLiveUsersFromGoogleDrive(false);
+      } else {
+        showAdminToast('تعذر تصدير المستخدمين. تأكد من أن الرابط سليم ومضبوط على Anyone.', 'error');
+      }
+      return;
+    }
+    fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveUser', user: usersToPush[idx] })
+    })
+    .then(res => res.json())
+    .then(d => {
+      if (d.status === 'success') count++;
+      pushNext(idx + 1);
+    })
+    .catch(() => pushNext(idx + 1));
+  };
+  pushNext(0);
 }
 
 // ========================================================
