@@ -3,8 +3,7 @@
 // ========================================================
 
 const NOURII_CONFIG = {
-  // 🟢 رابط Google Apps Script Web App المتصل بـ Google Drive كقاعدة بيانات رئيسية
-  googleScriptUrl: 'https://script.google.com/macros/s/AKfycbyiQqibtX1DCvh1970fYzs-5lkU5B5bEb9AbNObXEQGGGQbZytvqEODtgxSMxrNyAc/exec',
+  googleScriptUrl: 'https://script.google.com/macros/s/AKfycby6P3McAqNQqFjtwOaupCpGPL0tVqiTVVGquw7CTFhn_dP3mDMTzNvi-ao8W3zvQ5s/exec',
 
   // مستودع وبيانات GitHub
   githubRepo: 'yaminakkady/nourii',
