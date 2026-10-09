@@ -28,16 +28,28 @@ document.addEventListener('DOMContentLoaded', () => {
 // LOAD STORED DATA
 function loadAdminStoredData() {
   try {
-    // Current user session
+    // 1. Settings from config.js or localStorage
+    if (typeof NOURII_CONFIG !== 'undefined' && NOURII_CONFIG.googleScriptUrl) {
+      ADMIN_STATE.settings.googleScriptUrl = NOURII_CONFIG.googleScriptUrl;
+    }
+    const savedScriptUrl = localStorage.getItem('nourii_google_script_url');
+    if (savedScriptUrl) {
+      ADMIN_STATE.settings.googleScriptUrl = savedScriptUrl;
+    }
+
+    const ghToken = localStorage.getItem('nourii_github_pat');
+    if (ghToken) ADMIN_STATE.settings.githubToken = ghToken;
+
+    // 2. Current user session
     const session = localStorage.getItem('nourii_admin_session');
     if (session) ADMIN_STATE.currentUser = JSON.parse(session);
 
-    // Users list
+    // 3. Users list
     const storedUsers = localStorage.getItem('nourii_admin_users');
     if (storedUsers) {
       ADMIN_STATE.users = JSON.parse(storedUsers);
     } else {
-      // Default users
+      // Default users list with super admin
       ADMIN_STATE.users = [
         {
           username: 'admin',
@@ -45,14 +57,15 @@ function loadAdminStoredData() {
           fullName: 'مدير النظام (Super Admin)',
           role: 'admin',
           createdAt: new Date().toLocaleDateString('ar-EG'),
-          isActive: true
+          isActive: true,
+          mustChangePassword: false
         }
       ];
       localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
     }
 
-    // Products (Custom or fallback from products.js)
-    const storedProds = localStorage.getItem('nourii_admin_products');
+    // 4. Products (Custom from storage or fallback from products.js)
+    const storedProds = localStorage.getItem('nourii_admin_products') || localStorage.getItem('nourii_live_products');
     if (storedProds) {
       ADMIN_STATE.products = JSON.parse(storedProds);
     } else if (typeof PRODUCTS !== 'undefined') {
@@ -60,36 +73,37 @@ function loadAdminStoredData() {
       localStorage.setItem('nourii_admin_products', JSON.stringify(ADMIN_STATE.products));
     }
 
-    // Categories
+    // 5. Categories
     if (typeof CATEGORIES !== 'undefined') {
       ADMIN_STATE.categories = CATEGORIES;
     }
 
-    // Settings
-    const scriptUrl = localStorage.getItem('nourii_google_script_url');
-    if (scriptUrl) ADMIN_STATE.settings.googleScriptUrl = scriptUrl;
-
-    const ghToken = localStorage.getItem('nourii_github_pat');
-    if (ghToken) ADMIN_STATE.settings.githubToken = ghToken;
+    // If Google Drive URL is active, fetch live data from Google Drive as PRIMARY source
+    if (ADMIN_STATE.settings.googleScriptUrl) {
+      syncSilentlyFromGoogleDrive();
+    }
 
   } catch (e) {
     console.error('Error loading admin state:', e);
   }
 }
 
-// AUTHENTICATION
+// AUTHENTICATION & SESSION MANAGEMENT
 function checkAuthSession() {
   const loginScreen = document.getElementById('login-screen');
+  const firstTimeScreen = document.getElementById('first-time-setup-screen');
   const dashboardLayout = document.getElementById('dashboard-layout');
 
   if (ADMIN_STATE.currentUser) {
     if (loginScreen) loginScreen.classList.add('hidden');
+    if (firstTimeScreen) firstTimeScreen.classList.add('hidden');
     if (dashboardLayout) dashboardLayout.classList.remove('hidden');
     updateUserProfileDisplay();
     populateCategorySelectors();
     refreshAllData();
   } else {
     if (loginScreen) loginScreen.classList.remove('hidden');
+    if (firstTimeScreen) firstTimeScreen.classList.add('hidden');
     if (dashboardLayout) dashboardLayout.classList.add('hidden');
   }
 }
@@ -103,29 +117,84 @@ function handleLoginSubmit(e) {
   const username = usernameInput ? usernameInput.value.trim().toLowerCase() : '';
   const password = passwordInput ? passwordInput.value.trim() : '';
 
-  // Check in users list
+  // 1. Check in local users state
   const user = ADMIN_STATE.users.find(u => u.username.toLowerCase() === username && u.password === password);
 
   if (user) {
     if (user.isActive === false) {
-      showLoginError('هذا الحساب معطل حالياً من قبل الإدارة.');
+      showLoginError('هذا الحساب معطل حالياً من قِبل الإدارة.');
       return;
     }
 
-    ADMIN_STATE.currentUser = {
-      username: user.username,
-      fullName: user.fullName,
-      role: user.role
-    };
+    // 🟢 هل هذا تسجيل دخوله الأول ومطلوب منه إنشاء كلمة مرور خاصة؟
+    if (user.mustChangePassword) {
+      showFirstTimePasswordScreen(user);
+      return;
+    }
 
-    localStorage.setItem('nourii_admin_session', JSON.stringify(ADMIN_STATE.currentUser));
-    if (errorMsg) errorMsg.classList.add('hidden');
-    
-    showAdminToast(`مرحباً بك مجدداً، ${user.fullName} 👋`, 'success');
-    checkAuthSession();
+    // تسجيل الدخول العادي
+    completeUserLogin(user);
   } else {
-    showLoginError('اسم المستخدم أو كلمة المرور غير صحيحة.');
+    // 2. فحص عبر Google Drive API إذا كان مربوطاً
+    if (ADMIN_STATE.settings.googleScriptUrl) {
+      checkLoginWithGoogleDrive(username, password);
+    } else {
+      showLoginError('اسم المستخدم أو كلمة المرور غير صحيحة.');
+    }
   }
+}
+
+function completeUserLogin(user) {
+  ADMIN_STATE.currentUser = {
+    username: user.username,
+    fullName: user.fullName,
+    role: user.role
+  };
+
+  localStorage.setItem('nourii_admin_session', JSON.stringify(ADMIN_STATE.currentUser));
+  const errorMsg = document.getElementById('login-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  showAdminToast(`مرحباً بك مجدداً، ${user.fullName} 👋`, 'success');
+  checkAuthSession();
+}
+
+function checkLoginWithGoogleDrive(username, password) {
+  showAdminToast('جاري التحقق من الحساب عبر Google Drive...', 'info');
+
+  fetch(ADMIN_STATE.settings.googleScriptUrl, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'login',
+      username: username,
+      password: password
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success' && res.user) {
+      // مزامنة المستخدم محلياً
+      const existingIdx = ADMIN_STATE.users.findIndex(u => u.username.toLowerCase() === res.user.username.toLowerCase());
+      if (existingIdx > -1) {
+        ADMIN_STATE.users[existingIdx] = { ...ADMIN_STATE.users[existingIdx], ...res.user, password };
+      } else {
+        ADMIN_STATE.users.push({ ...res.user, password, isActive: true, createdAt: new Date().toLocaleDateString('ar-EG') });
+      }
+      localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
+
+      if (res.user.mustChangePassword) {
+        showFirstTimePasswordScreen(res.user);
+      } else {
+        completeUserLogin(res.user);
+      }
+    } else {
+      showLoginError(res.message || 'اسم المستخدم أو كلمة المرور غير صحيحة.');
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    showLoginError('تعذر الاتصال بـ Google Drive للتحقق من الحساب.');
+  });
 }
 
 function showLoginError(msg) {
@@ -161,11 +230,210 @@ function updateUserProfileDisplay() {
   }
 }
 
-// TAB SWITCHING
+// ========================================================
+// 2. FIRST-TIME PASSWORD SETUP (إنشاء كلمة مرور أول مرة)
+// ========================================================
+function showFirstTimePasswordScreen(user) {
+  const loginScreen = document.getElementById('login-screen');
+  const firstTimeScreen = document.getElementById('first-time-setup-screen');
+  const targetInput = document.getElementById('first-time-user-target');
+  const nameDisplay = document.getElementById('first-time-username-display');
+
+  if (loginScreen) loginScreen.classList.add('hidden');
+  if (firstTimeScreen) firstTimeScreen.classList.remove('hidden');
+
+  if (targetInput) targetInput.value = user.username;
+  if (nameDisplay) nameDisplay.innerText = user.fullName || user.username;
+}
+
+function handleFirstTimePasswordSubmit(e) {
+  e.preventDefault();
+  const username = document.getElementById('first-time-user-target').value;
+  const newPass = document.getElementById('first-time-new-pass').value.trim();
+  const confirmPass = document.getElementById('first-time-confirm-pass').value.trim();
+  const errorBox = document.getElementById('first-time-error-msg');
+
+  if (newPass.length < 4) {
+    showFirstTimeError('يجب أن لا تقل كلمة المرور عن 4 خانات.');
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    showFirstTimeError('كلمتا المرور غير متطابقتين! يرجى إعادة التأكيد.');
+    return;
+  }
+
+  // تحديث كلمة المرور محلياً وإلغاء شرط أول دخول
+  const userIdx = ADMIN_STATE.users.findIndex(u => u.username.toLowerCase() === username.toLowerCase());
+  if (userIdx > -1) {
+    ADMIN_STATE.users[userIdx].password = newPass;
+    ADMIN_STATE.users[userIdx].mustChangePassword = false;
+    localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
+
+    // تحديث في Google Drive إذا كان متاحاً
+    if (ADMIN_STATE.settings.googleScriptUrl) {
+      updatePasswordInGoogleDrive(username, newPass);
+    }
+
+    showAdminToast('تم إنشاء كلمة المرور الخاصة بك بنجاح! 🎉', 'success');
+
+    // تسجيل الدخول التلقائي
+    completeUserLogin(ADMIN_STATE.users[userIdx]);
+  } else {
+    showFirstTimeError('حدث خطأ في العثور على الحساب.');
+  }
+}
+
+function showFirstTimeError(msg) {
+  const errorBox = document.getElementById('first-time-error-msg');
+  if (errorBox) {
+    errorBox.innerText = msg;
+    errorBox.classList.remove('hidden');
+  }
+}
+
+// ========================================================
+// 1. CHANGE CURRENT USER'S PASSWORD (تغيير كلمة المرور الشخصية)
+// ========================================================
+function openChangePasswordModal() {
+  const modal = document.getElementById('change-password-modal');
+  const form = document.getElementById('change-password-form');
+  const errorBox = document.getElementById('chg-pass-error');
+  if (form) form.reset();
+  if (errorBox) errorBox.classList.add('hidden');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeChangePasswordModal() {
+  const modal = document.getElementById('change-password-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function handleChangePasswordSubmit(e) {
+  e.preventDefault();
+  if (!ADMIN_STATE.currentUser) return;
+
+  const currentPass = document.getElementById('chg-current-pass').value.trim();
+  const newPass = document.getElementById('chg-new-pass').value.trim();
+  const confirmPass = document.getElementById('chg-confirm-pass').value.trim();
+  const errorBox = document.getElementById('chg-pass-error');
+
+  const username = ADMIN_STATE.currentUser.username;
+  const user = ADMIN_STATE.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+  if (!user || user.password !== currentPass) {
+    if (errorBox) {
+      errorBox.innerText = 'كلمة المرور الحالية غير صحيحة!';
+      errorBox.classList.remove('hidden');
+    }
+    return;
+  }
+
+  if (newPass.length < 4) {
+    if (errorBox) {
+      errorBox.innerText = 'كلمة المرور الجديدة يجب أن لا تقل عن 4 خانات.';
+      errorBox.classList.remove('hidden');
+    }
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    if (errorBox) {
+      errorBox.innerText = 'كلمتا المرور الجديدتان غير متطابقتين!';
+      errorBox.classList.remove('hidden');
+    }
+    return;
+  }
+
+  // تحديث كلمة المرور
+  user.password = newPass;
+  localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
+
+  if (ADMIN_STATE.settings.googleScriptUrl) {
+    updatePasswordInGoogleDrive(username, newPass);
+  }
+
+  closeChangePasswordModal();
+  showAdminToast('تم تغيير كلمة المرور بنجاح! 🔒', 'success');
+}
+
+function updatePasswordInGoogleDrive(username, newPassword) {
+  const url = ADMIN_STATE.settings.googleScriptUrl;
+  if (!url) return;
+
+  fetch(url, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'changePassword',
+      username: username,
+      newPassword: newPassword
+    })
+  }).catch(err => console.warn('Drive password update err:', err));
+}
+
+// ========================================================
+// 1. EDIT EXISTING USERS (تعديل المستخدمين وصلاحياتهم)
+// ========================================================
+function openEditUserModal(username) {
+  const user = ADMIN_STATE.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (!user) return;
+
+  const modal = document.getElementById('edit-user-modal');
+  document.getElementById('edit-user-username').value = user.username;
+  document.getElementById('edit-user-fullname').value = user.fullName || '';
+  document.getElementById('edit-user-role').value = user.role || 'editor';
+  document.getElementById('edit-user-status').value = user.isActive !== false ? 'active' : 'disabled';
+  document.getElementById('edit-user-new-password').value = '';
+  document.getElementById('edit-user-must-change-pass').checked = Boolean(user.mustChangePassword);
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeEditUserModal() {
+  const modal = document.getElementById('edit-user-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function handleEditUserFormSubmit(e) {
+  e.preventDefault();
+  const username = document.getElementById('edit-user-username').value;
+  const fullName = document.getElementById('edit-user-fullname').value.trim();
+  const role = document.getElementById('edit-user-role').value;
+  const isActive = document.getElementById('edit-user-status').value === 'active';
+  const newPass = document.getElementById('edit-user-new-password').value.trim();
+  const mustChange = document.getElementById('edit-user-must-change-pass').checked;
+
+  const idx = ADMIN_STATE.users.findIndex(u => u.username.toLowerCase() === username.toLowerCase());
+  if (idx > -1) {
+    ADMIN_STATE.users[idx].fullName = fullName;
+    ADMIN_STATE.users[idx].role = role;
+    ADMIN_STATE.users[idx].isActive = isActive;
+    ADMIN_STATE.users[idx].mustChangePassword = mustChange;
+
+    if (newPass) {
+      ADMIN_STATE.users[idx].password = newPass;
+    }
+
+    localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
+
+    // مزامنة التعديل في Google Drive إذا كان متاحاً
+    if (ADMIN_STATE.settings.googleScriptUrl) {
+      syncUserToGoogleDrive(ADMIN_STATE.users[idx]);
+    }
+
+    closeEditUserModal();
+    renderUsersTable();
+    updateStatCards();
+    showAdminToast(`تم تحديث بيانات المستخدم "${fullName}" بنجاح! ✨`, 'success');
+  }
+}
+
+// ========================================================
+// TAB SWITCHING & OVERVIEW
+// ========================================================
 function switchTab(tabId) {
   ADMIN_STATE.activeTab = tabId;
 
-  // Tabs
   const tabs = ['overview', 'products', 'users', 'sync'];
   tabs.forEach(t => {
     const el = document.getElementById(`tab-${t}`);
@@ -174,7 +442,6 @@ function switchTab(tabId) {
     if (btn) btn.classList.toggle('active', t !== tabId);
   });
 
-  // Headers
   const titleEl = document.getElementById('page-title');
   const subEl = document.getElementById('page-subtitle');
 
@@ -187,11 +454,11 @@ function switchTab(tabId) {
     renderProductsTable();
   } else if (tabId === 'users') {
     titleEl.innerText = 'إدارة المستخدمين والمشرفين';
-    subEl.innerText = 'التحكم في صلاحيات الوصول للمتجر';
+    subEl.innerText = 'التحكم في صلاحيات الوصول وإنشاء كلمات المرور';
     renderUsersTable();
   } else if (tabId === 'sync') {
     titleEl.innerText = 'إعدادات Google Drive & GitHub';
-    subEl.innerText = 'ربط قاعدة بيانات Google Sheets والمزامنة مع المستودع';
+    subEl.innerText = 'ربط قاعدة بيانات Google Sheets كمصدر رئيسي ومزامنة المستودع';
     loadSyncSettingsInputs();
   }
 }
@@ -210,7 +477,6 @@ function updateStatCards() {
   if (totalUsersEl) totalUsersEl.innerText = ADMIN_STATE.users.length;
 }
 
-// POPULATE CATEGORIES IN SELECTORS
 function populateCategorySelectors() {
   const filterSelect = document.getElementById('admin-category-filter');
   const formSelect = document.getElementById('prod-category');
@@ -233,18 +499,16 @@ function populateCategorySelectors() {
 }
 
 // ========================================================
-// PRODUCTS MANAGEMENT (إدارة المنتجات)
+// PRODUCTS MANAGEMENT
 // ========================================================
 function renderProductsTable() {
   const tbody = document.getElementById('admin-products-table-body');
   if (!tbody) return;
 
   let filtered = ADMIN_STATE.products.filter(p => {
-    // Category filter
     if (ADMIN_STATE.categoryFilter !== 'all' && p.categoryId !== ADMIN_STATE.categoryFilter) {
       return false;
     }
-    // Search query
     if (ADMIN_STATE.searchQuery.trim() !== '') {
       const q = ADMIN_STATE.searchQuery.toLowerCase().trim();
       const matchAr = p.nameAr && p.nameAr.toLowerCase().includes(q);
@@ -328,7 +592,6 @@ function handleCategoryFilter(val) {
   renderProductsTable();
 }
 
-// ADD & EDIT PRODUCT MODAL
 function openAddProductModal() {
   const modal = document.getElementById('product-form-modal');
   const title = document.getElementById('product-modal-title');
@@ -408,9 +671,9 @@ function handleProductFormSubmit(e) {
   renderProductsTable();
   updateStatCards();
 
-  showAdminToast(isEditing ? 'تم تعديل المنتج بنجاح! ✨' : 'تمت إضافة المنتج الجديد بنجاح! 🎉', 'success');
+  showAdminToast(isEditing ? 'تم حفظ التعديل! ✨' : 'تمت إضافة المنتج بنجاح! 🎉', 'success');
 
-  // Trigger optional sync to Google Drive
+  // مزامنة فورية مع Google Drive إذا كان مربوطاً كقاعدة بيانات
   if (ADMIN_STATE.settings.googleScriptUrl) {
     syncProductToGoogleDrive(productObj);
   }
@@ -435,12 +698,11 @@ function deleteProduct(id) {
 
 function saveProductsToStorage() {
   localStorage.setItem('nourii_admin_products', JSON.stringify(ADMIN_STATE.products));
-  // Keep live store synchronized too
   localStorage.setItem('nourii_live_products', JSON.stringify(ADMIN_STATE.products));
 }
 
 // ========================================================
-// USERS MANAGEMENT (إدارة المستخدمين)
+// USERS MANAGEMENT
 // ========================================================
 function renderUsersTable() {
   const tbody = document.getElementById('admin-users-table-body');
@@ -448,12 +710,14 @@ function renderUsersTable() {
 
   tbody.innerHTML = ADMIN_STATE.users.map((u, i) => {
     const isSuperAdmin = u.username.toLowerCase() === 'admin';
+    const isSelf = ADMIN_STATE.currentUser && ADMIN_STATE.currentUser.username.toLowerCase() === u.username.toLowerCase();
 
     return `
       <tr>
         <td class="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center gap-2">
           <i class="fa-solid fa-user-circle text-stone-400 text-lg"></i>
           <span>${u.username}</span>
+          ${isSelf ? '<span class="text-[10px] bg-pink-100 text-pink-700 px-1.5 py-0.5 rounded font-bold">أنت</span>' : ''}
         </td>
         <td class="text-sm">${u.fullName}</td>
         <td>
@@ -465,18 +729,32 @@ function renderUsersTable() {
         </td>
         <td class="text-xs text-stone-400">${u.createdAt || '-'}</td>
         <td>
-          <span class="text-xs font-bold text-emerald-600 flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> نشط
-          </span>
+          ${u.isActive !== false ? `
+            <span class="text-xs font-bold text-emerald-600 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> نشط
+            </span>
+          ` : `
+            <span class="text-xs font-bold text-red-500 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-red-400"></span> معطل
+            </span>
+          `}
+          ${u.mustChangePassword ? `
+            <span class="text-[10px] text-amber-600 block mt-0.5">⚠️ بانتظار تعيين كلمة مرور</span>
+          ` : ''}
         </td>
         <td class="text-center">
-          ${isSuperAdmin ? `
-            <span class="text-xs text-stone-400 italic">حساب رئيسي</span>
-          ` : `
-            <button onclick="deleteUser('${u.username}')" class="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors" title="حذف المستخدم">
-              <i class="fa-solid fa-trash-can text-xs"></i>
+          <div class="flex items-center justify-center gap-2">
+            <!-- Edit User Button -->
+            <button onclick="openEditUserModal('${u.username}')" class="p-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-300 transition-colors" title="تعديل المستخدم">
+              <i class="fa-solid fa-pen-to-square text-xs"></i>
             </button>
-          `}
+
+            ${isSuperAdmin ? '' : `
+              <button onclick="deleteUser('${u.username}')" class="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors" title="حذف المستخدم">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            `}
+          </div>
         </td>
       </tr>
     `;
@@ -487,6 +765,8 @@ function openAddUserModal() {
   const modal = document.getElementById('user-form-modal');
   const form = document.getElementById('user-form');
   if (form) form.reset();
+  const mustChangeBox = document.getElementById('user-must-change-pass');
+  if (mustChangeBox) mustChangeBox.checked = true;
   if (modal) modal.classList.remove('hidden');
 }
 
@@ -501,6 +781,7 @@ function handleUserFormSubmit(e) {
   const fullName = document.getElementById('user-fullname').value.trim();
   const password = document.getElementById('user-password').value.trim();
   const role = document.getElementById('user-role').value;
+  const mustChange = document.getElementById('user-must-change-pass').checked;
 
   if (ADMIN_STATE.users.some(u => u.username.toLowerCase() === username)) {
     showAdminToast('اسم المستخدم مسجل بالفعل!', 'error');
@@ -513,30 +794,61 @@ function handleUserFormSubmit(e) {
     password,
     role,
     createdAt: new Date().toLocaleDateString('ar-EG'),
-    isActive: true
+    isActive: true,
+    mustChangePassword: mustChange
   };
 
   ADMIN_STATE.users.push(newUser);
   localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
 
+  // مزامنة المستخدم إلى Google Drive
+  if (ADMIN_STATE.settings.googleScriptUrl) {
+    syncUserToGoogleDrive(newUser);
+  }
+
   closeUserFormModal();
   renderUsersTable();
   updateStatCards();
-  showAdminToast(`تمت إضافة المستخدم "${fullName}" بنجاح! 🎉`, 'success');
+  showAdminToast(`تمت إضافة المستخدم "${fullName}" بنجاح! سيُطلب منه تعيين كلمة مروره الخاصة عند أول دخول. 🔐`, 'success');
 }
 
 function deleteUser(username) {
   if (confirm(`هل أنت متأكد من حذف المستخدم "${username}"؟`)) {
     ADMIN_STATE.users = ADMIN_STATE.users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
     localStorage.setItem('nourii_admin_users', JSON.stringify(ADMIN_STATE.users));
+
+    if (ADMIN_STATE.settings.googleScriptUrl) {
+      deleteUserFromGoogleDrive(username);
+    }
+
     renderUsersTable();
     updateStatCards();
     showAdminToast('تم حذف المستخدم بنجاح.', 'info');
   }
 }
 
+function syncUserToGoogleDrive(user) {
+  const url = ADMIN_STATE.settings.googleScriptUrl;
+  if (!url) return;
+
+  fetch(url, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'saveUser', user: user })
+  }).catch(e => console.warn('Drive user sync err:', e));
+}
+
+function deleteUserFromGoogleDrive(username) {
+  const url = ADMIN_STATE.settings.googleScriptUrl;
+  if (!url) return;
+
+  fetch(url, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'deleteUser', username: username })
+  }).catch(e => console.warn('Drive user delete err:', e));
+}
+
 // ========================================================
-// GOOGLE DRIVE & SHEETS INTEGRATION
+// 3. GOOGLE DRIVE AS PRIMARY DATABASE (قاعدة البيانات الرئيسية)
 // ========================================================
 function loadSyncSettingsInputs() {
   const scriptInput = document.getElementById('google-script-url');
@@ -557,23 +869,42 @@ function saveAndTestGoogleDrive() {
 
   ADMIN_STATE.settings.googleScriptUrl = url;
   localStorage.setItem('nourii_google_script_url', url);
-  showAdminToast('جاري اختبار الاتصال بقاعدة بيانات Google Drive...', 'info');
+  showAdminToast('جاري الاتصال بـ Google Drive وتفعيله كقاعدة بيانات رئيسية...', 'info');
 
   fetch(`${url}?action=ping`)
     .then(res => res.json())
     .then(data => {
       if (data.status === 'success') {
-        showAdminToast('تم الاتصال بنجاح بـ Google Drive و Sheets! 🟢', 'success');
-        updateSyncStatusIndicator('Google Drive متصل', 'ok');
+        showAdminToast('تم ربط وتفعيل Google Drive كقاعدة بيانات رئيسية بنجاح! 🟢', 'success');
+        updateSyncStatusIndicator('Google Drive متصل (المصدر الرئيسي)', 'ok');
+        // جلب المنتجات فوراً
+        syncFromGoogleDrive();
       } else {
         showAdminToast('فشل التحقق: ' + (data.message || 'خطأ غير معروف'), 'error');
       }
     })
     .catch(err => {
-      console.warn('Ping error (CORS or network):', err);
-      // Apps Script might have CORS redirects, show successful save
+      console.warn('Ping error:', err);
       showAdminToast('تم حفظ الرابط بنجاح! 🟢', 'success');
     });
+}
+
+function syncSilentlyFromGoogleDrive() {
+  const url = ADMIN_STATE.settings.googleScriptUrl;
+  if (!url) return;
+
+  fetch(`${url}?action=getProducts`)
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
+        ADMIN_STATE.products = res.data;
+        saveProductsToStorage();
+        renderProductsTable();
+        updateStatCards();
+        updateSyncStatusIndicator('Google Drive متصل (المصدر الرئيسي)', 'ok');
+      }
+    })
+    .catch(err => console.warn('Silent drive sync:', err));
 }
 
 function syncFromGoogleDrive() {
@@ -595,7 +926,7 @@ function syncFromGoogleDrive() {
         updateStatCards();
         showAdminToast(`تم جلب ${res.data.length} منتج بنجاح من Google Drive! 📥`, 'success');
       } else {
-        showAdminToast('لم يتم العثور على منتجات في ورقة Google Sheet.', 'info');
+        showAdminToast('تم الاتصال ولكن ورقة Products فارغة حالياً.', 'info');
       }
     })
     .catch(err => {
@@ -611,9 +942,8 @@ function pushToGoogleDrive() {
     return;
   }
 
-  showAdminToast('جاري تصدير المنتجات إلى Google Sheet...', 'info');
+  showAdminToast('جاري تصدير جميع المنتجات إلى Google Sheet...', 'info');
 
-  // Push items sequentially
   let successCount = 0;
   const prods = ADMIN_STATE.products;
 
@@ -661,7 +991,6 @@ function deleteProductFromGoogleDrive(id) {
   }).catch(e => console.warn('Drive delete background err:', e));
 }
 
-// UPLOAD IMAGE TO GOOGLE DRIVE
 function handleImageFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -706,7 +1035,7 @@ function handleImageFileUpload(e) {
 }
 
 // ========================================================
-// GITHUB SYNCHRONIZATION (المزامنة مع GITHUB)
+// GITHUB SYNCHRONIZATION
 // ========================================================
 function generateProductsJsContent() {
   return `// ========================================================
@@ -725,19 +1054,35 @@ const FAQS = ${typeof FAQS !== 'undefined' ? JSON.stringify(FAQS, null, 2) : '[]
 `;
 }
 
+function generateConfigFileContent() {
+  return `// ========================================================
+// NOURII STORE - GLOBAL CONFIGURATION (الإعدادات وقاعدة البيانات)
+// ========================================================
+
+const NOURII_CONFIG = {
+  // 🟢 رابط Google Apps Script Web App المتصل بـ Google Drive كقاعدة بيانات رئيسية
+  googleScriptUrl: '${ADMIN_STATE.settings.googleScriptUrl || ''}',
+
+  // مستودع وبيانات GitHub
+  githubRepo: 'yaminakkady/nourii',
+  githubBranch: 'main'
+};
+`;
+}
+
 function publishToGitHub() {
   const tokenInput = document.getElementById('github-pat-token');
   const token = tokenInput ? tokenInput.value.trim() : (ADMIN_STATE.settings.githubToken || '');
+
+  saveProductsToStorage();
 
   if (token) {
     ADMIN_STATE.settings.githubToken = token;
     localStorage.setItem('nourii_github_pat', token);
     pushDirectlyViaGitHubApi(token);
   } else {
-    // If no token in browser, update local file & offer download or batch script
-    saveProductsToStorage();
     downloadUpdatedProductsJs();
-    showAdminToast('تم تجهيز التعديلات! يمكنك تشغيل sync_store.bat لرفعها إلى GitHub بنقرة واحدة.', 'info');
+    showAdminToast('تم حفظ التعديلات محلياً! اضغط مرتين على sync_store.bat لنشرها إلى GitHub فوراً.', 'info');
   }
 }
 
@@ -750,7 +1095,6 @@ function pushDirectlyViaGitHubApi(token) {
   const path = 'products.js';
   const url = `https://api.github.com/repos/${repo}/contents/${path}`;
 
-  // 1. Get current file sha
   fetch(url, {
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -761,7 +1105,6 @@ function pushDirectlyViaGitHubApi(token) {
   .then(fileData => {
     const sha = fileData.sha;
 
-    // 2. Commit and push
     return fetch(url, {
       method: 'PUT',
       headers: {
@@ -788,7 +1131,7 @@ function pushDirectlyViaGitHubApi(token) {
   })
   .catch(err => {
     console.error(err);
-    showAdminToast('تعذر النشر عبر GitHub API، تأكد من صحة التوكن والصلاحيات.', 'error');
+    showAdminToast('تعذر النشر عبر GitHub API، يمكنك استخدام sync_store.bat بدلاً منه.', 'error');
   });
 }
 

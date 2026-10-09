@@ -27,8 +27,8 @@ except Exception as e:
 # 2. إضافة التعديلات إلى Git
 print("\n[2/3] تجهيز التعديلات (Staging & Commit)...")
 try:
-    subprocess.run(["git", "add", "products.js", "admin.html", "admin.js", "admin.css", "index.html", "app.js", "README.md"], check=True)
-    commit_res = subprocess.run(["git", "commit", "-m", "sync: update store items and admin portal"], capture_output=True, text=True)
+    subprocess.run(["git", "add", "config.js", "products.js", "admin.html", "admin.js", "admin.css", "index.html", "app.js", "README.md", "google_apps_script_backend.js", "docs/"], check=True)
+    commit_res = subprocess.run(["git", "commit", "-m", "sync: update store items, config, and admin portal"], capture_output=True, text=True)
     if "nothing to commit" in commit_res.stdout:
         print("المستودع محدث بالفعل، لا توجد تغييرات جديدة للحفظ.")
     else:

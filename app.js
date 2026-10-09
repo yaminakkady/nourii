@@ -36,7 +36,34 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCartBadge();
   setupEventListeners();
   initGiveawaysEstimator();
+
+  // 🟢 جلب المنتجات الحية مباشرة من Google Drive كمصدر رئيسي!
+  fetchLiveProductsFromGoogleDrive();
 });
+
+// GOOGLE DRIVE PRIMARY SOURCE ENGINE
+function fetchLiveProductsFromGoogleDrive() {
+  const driveUrl = (typeof NOURII_CONFIG !== 'undefined' && NOURII_CONFIG.googleScriptUrl) 
+    || localStorage.getItem('nourii_google_script_url');
+
+  if (!driveUrl) return;
+
+  fetch(`${driveUrl}?action=getProducts`)
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
+        PRODUCTS.length = 0;
+        res.data.forEach(p => PRODUCTS.push(p));
+        localStorage.setItem('nourii_live_products', JSON.stringify(res.data));
+        renderCategories();
+        renderProducts();
+        console.log(`[Nourii] Loaded ${res.data.length} products live from Google Drive database.`);
+      }
+    })
+    .catch(err => {
+      console.warn('[Nourii] Using offline/cached catalog:', err);
+    });
+}
 
 // LOAD PERSISTENT DATA
 function loadStoredData() {
