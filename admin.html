@@ -343,11 +343,18 @@
               </select>
             </div>
 
-            <!-- Add Product Button -->
-            <button onclick="openAddProductModal()" class="py-2.5 px-5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all">
-              <i class="fa-solid fa-plus"></i>
-              <span>إضافة منتج جديد</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <button onclick="pushToGoogleDrive()" class="py-2.5 px-4 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all" title="مزامنة وتصدير جميع المنتجات إلى Google Sheet">
+                <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i>
+                <span>مزامنة المنتجات مع Google Sheet</span>
+              </button>
+
+              <!-- Add Product Button -->
+              <button onclick="openAddProductModal()" class="py-2.5 px-5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all">
+                <i class="fa-solid fa-plus"></i>
+                <span>إضافة منتج جديد</span>
+              </button>
+            </div>
           </div>
 
           <!-- Products Table -->

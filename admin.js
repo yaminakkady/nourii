@@ -942,33 +942,55 @@ function pushToGoogleDrive() {
     return;
   }
 
-  showAdminToast('جاري تصدير جميع المنتجات إلى Google Sheet...', 'info');
+  showAdminToast('جاري تصدير ومزامنة جميع المنتجات إلى Google Sheet...', 'info');
 
-  let successCount = 0;
   const prods = ADMIN_STATE.products;
 
-  const pushItem = (index) => {
-    if (index >= prods.length) {
-      showAdminToast(`تم تصدير ${successCount} منتج بنجاح إلى Google Drive! 📤`, 'success');
-      return;
+  // المحاولة الأولى: تصدير سريع دفعة واحدة Bulk Import
+  fetch(url, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'bulkImportProducts',
+      products: prods
+    })
+  })
+  .then(res => res.json())
+  .then(d => {
+    if (d.status === 'success') {
+      showAdminToast(`تم تصدير وحفظ كافة الـ ${prods.length} منتج بنجاح في Google Sheet! 📤✨`, 'success');
+    } else {
+      throw new Error(d.message || 'Bulk failed');
     }
+  })
+  .catch(err => {
+    console.warn('Bulk import fallback to sequential:', err);
+    let successCount = 0;
+    const pushItem = (index) => {
+      if (index >= prods.length) {
+        if (successCount > 0) {
+          showAdminToast(`تم تصدير ${successCount} منتج بنجاح إلى Google Drive! 📤`, 'success');
+        } else {
+          showAdminToast('تعذر التصدير. تأكد من ضبط إعداد النشر في Google Apps Script على Anyone (أي شخص).', 'error');
+        }
+        return;
+      }
 
-    fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'saveProduct',
-        product: prods[index]
+      fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'saveProduct',
+          product: prods[index]
+        })
       })
-    })
-    .then(res => res.json())
-    .then(d => {
-      if (d.status === 'success') successCount++;
-      pushItem(index + 1);
-    })
-    .catch(() => pushItem(index + 1));
-  };
-
-  pushItem(0);
+      .then(res => res.json())
+      .then(d => {
+        if (d.status === 'success') successCount++;
+        pushItem(index + 1);
+      })
+      .catch(() => pushItem(index + 1));
+    };
+    pushItem(0);
+  });
 }
 
 function syncProductToGoogleDrive(product) {
