@@ -3,120 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nourii | متجر نوري للمنتجات اليدوية والتوزيعات والكونكريت</title>
-
-  <!-- Meta SEO -->
-  <meta name="description" content="متجر Nourii (نوري) - وجهتكم الأولى للأعمال الفنية اليدوية، كونكريت للتلوين، كتب تلوين، توزيعات مناسبات، نوت بوك، ومطبوعات تعليمية ودينية فاخرة.">
-  <meta name="keywords" content="Nourii, نوري, كونكريت للتلوين, كتب تلوين, توزيعات مناسبات, نوت بوك, مطبوعات دينية, ادوات تعليمية للاطفال, استيكرز, هاند ميد">
-
-  <!-- Tailwind CSS CDN + shared theme -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="tailwind-config.js?v=20261101c"></script>
-
-  <!-- Font Awesome 6 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="styles.css?v=20261101c">
+  <title>Nourii | انتقلنا إلى عنوان جديد</title>
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://nouriistore.github.io/">
+  <script>
+    // Old address: yaminakkady.github.io/nourii/<page>?<query> -> nouriistore.github.io/<page>?<query>
+    var page = location.pathname.replace(/^\/nourii\/?/, '/');
+    location.replace('https://nouriistore.github.io' + page + location.search + location.hash);
+  </script>
+  <meta http-equiv="refresh" content="0; url=https://nouriistore.github.io/">
 </head>
-<body data-page="home">
-
-  <div id="site-header"></div>
-
-  <main>
-    <!-- ================= HERO ================= -->
-    <section id="hero" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 lg:pt-12">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center bg-brand-50 dark:bg-stone-900 rounded-[28px] p-6 sm:p-10 lg:p-12">
-        <div class="text-center lg:text-start order-2 lg:order-1">
-          <span class="inline-block bg-white dark:bg-stone-800 text-brand-600 dark:text-brand-300 px-4 py-1.5 rounded-full text-xs font-bold mb-5">
-            صناعة يدوية بكل حب وتفاصيل مخصصة باسمك
-          </span>
-          <h1 class="text-4xl sm:text-5xl font-bold leading-[1.3] mb-5">
-            عالم <span class="text-brand-500">Nourii</span> للإبداع والهدايا المميزة
-          </h1>
-          <p class="text-base text-stone-600 dark:text-stone-300 leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
-            أطقم كونكريت للتلوين تنمي مهارات أطفالك، توزيعات للمناسبات بالأسماء، دفاتر منقوشة بالذهب، ومطبوعات تُخلد أجمل ذكرياتكم.
-          </p>
-          <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3">
-            <a href="shop.html" class="btn-primary h-[50px] px-8 text-base inline-flex items-center gap-2">
-              <span>تسوق الآن</span>
-            </a>
-            <a href="giveaways.html" class="btn-outline h-[50px] px-7 text-base inline-flex items-center gap-2">
-              <span>صانع التوزيعات</span>
-            </a>
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 text-xs font-bold text-stone-600 dark:text-stone-300">
-            <div class="flex items-center justify-center lg:justify-start gap-2"><i class="fa-solid fa-truck-fast text-brand-500"></i>شحن لكل المحافظات</div>
-            <div class="flex items-center justify-center lg:justify-start gap-2"><i class="fa-solid fa-pen-nib text-brand-500"></i>تخصيص بالأسماء</div>
-            <div class="flex items-center justify-center lg:justify-start gap-2"><i class="fa-solid fa-heart text-brand-500"></i>شغل هاند ميد</div>
-            <div class="flex items-center justify-center lg:justify-start gap-2"><i class="fa-brands fa-whatsapp text-brand-500"></i>طلب سهل بالواتساب</div>
-          </div>
-        </div>
-
-        <div class="order-1 lg:order-2">
-          <div class="grid grid-cols-2 gap-3 sm:gap-4">
-            <img src="assets/images/concrete-coloring.jpg" alt="كونكريت للتلوين" class="col-span-2 w-full h-56 sm:h-72 object-cover rounded-2xl">
-            <img src="assets/images/notebooks.jpg" alt="نوت بوك" class="w-full h-32 sm:h-40 object-cover rounded-2xl">
-            <img src="assets/images/event-favors.jpg" alt="توزيعات مناسبات" class="w-full h-32 sm:h-40 object-cover rounded-2xl">
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= CATEGORIES SHOWCASE ================= -->
-    <section id="categories-showcase" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
-      <div class="text-center mb-8">
-        <h2 class="text-3xl font-bold">تسوق حسب القسم</h2>
-      </div>
-      <div id="categories-showcase-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-4 sm:gap-6"></div>
-    </section>
-
-    <!-- ================= FEATURED PRODUCTS ================= -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
-      <div class="flex items-end justify-between gap-4 mb-6">
-        <h2 class="text-3xl font-bold">الأكثر طلباً</h2>
-        <a href="shop.html" class="font-display font-bold text-brand-500 hover:text-brand-600 whitespace-nowrap">عرض كل المنتجات ←</a>
-      </div>
-      <div id="featured-grid" class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6"></div>
-    </section>
-
-    <!-- ================= GIVEAWAYS PROMO ================= -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
-      <a href="giveaways.html" class="group flex flex-col sm:flex-row items-center gap-6 bg-brand-50 dark:bg-stone-900 rounded-[28px] p-6 sm:p-8">
-        <img src="assets/images/event-favors.jpg" alt="توزيعات مناسبات" class="w-full sm:w-56 h-40 object-cover rounded-2xl">
-        <div class="flex-1 text-center sm:text-start">
-          <h2 class="text-2xl sm:text-3xl font-bold mb-2">صانع التوزيعات الذكي 💍🍼</h2>
-          <p class="text-stone-600 dark:text-stone-300 text-sm leading-relaxed">احسب تكلفة توزيعات السبوع، الخطوبة، كتب الكتاب أو التخرج في ثوانٍ مع خصومات الكميات.</p>
-        </div>
-        <span class="btn-primary h-[50px] px-8 text-base inline-flex items-center whitespace-nowrap">جرّب الآن</span>
-      </a>
-    </section>
-
-    <!-- ================= REVIEWS ================= -->
-    <section id="reviews-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-      <div class="text-center mb-8">
-        <h2 class="text-3xl font-bold">آراء عملائنا</h2>
-      </div>
-      <div id="reviews-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
-    </section>
-
-    <!-- ================= FAQS ================= -->
-    <section id="faqs-section" class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-      <div class="text-center mb-8">
-        <h2 class="text-3xl font-bold">الأسئلة الشائعة</h2>
-      </div>
-      <div id="faqs-container" class="space-y-3"></div>
-    </section>
-  </main>
-
-  <div id="site-footer"></div>
-  <div id="site-overlays"></div>
-
-  <!-- Scripts -->
-  <script src="config.js?v=20261101c"></script>
-  <script src="products.js?v=20261101c"></script>
-  <script src="layout.js?v=20261101c"></script>
-  <script src="app.js?v=20261101c"></script>
+<body style="font-family: sans-serif; text-align: center; padding: 60px 16px;">
+  <p>انتقل متجر Nourii إلى عنوان جديد:</p>
+  <p><a href="https://nouriistore.github.io/">nouriistore.github.io</a></p>
 </body>
 </html>
